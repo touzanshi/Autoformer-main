@@ -71,29 +71,32 @@ class EncoderLayer(nn.Module):
         self.norm = nn.LayerNorm(d_model)
 
     def forward(self, x, attn_mask=None):
-        # new_x, attn = self.attention(
-        #     x, x, x,
-        #     attn_mask=attn_mask
-        # )
-        # x1 = x + self.dropout(new_x)
-        # x1, _ = self.decomp1(x1)
-        # y = x1
-        # y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))
-        # y = self.dropout(self.conv2(y).transpose(-1, 1))
-        # res, _ = self.decomp2(y + x1)
-        # return res, attn
-
         new_x, attn = self.attention(
             x, x, x,
             attn_mask=attn_mask
         )
-        x = x + self.dropout(new_x)
-        x, _ = self.decomp1(x)
-        y = x
+        x1 = [x, self.dropout(new_x)]
+        x1 = torch.cat(x1)
+        x1, _ = self.decomp1(x1)
+        y = x1
         y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))
         y = self.dropout(self.conv2(y).transpose(-1, 1))
-        res, _ = self.decomp2(x + y)
+        x2 = [y, x1]
+        x2 = torch.cat(x2)
+        res, _ = self.decomp2(x2)
         return res, attn
+
+        # new_x, attn = self.attention(
+        #     x, x, x,
+        #     attn_mask=attn_mask
+        # )
+        # x = x + self.dropout(new_x)
+        # x, _ = self.decomp1(x)
+        # y = x
+        # y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))
+        # y = self.dropout(self.conv2(y).transpose(-1, 1))
+        # res, _ = self.decomp2(x + y)
+        # return res, attn
 
 
 class Encoder(nn.Module):
